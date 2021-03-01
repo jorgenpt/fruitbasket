@@ -932,6 +932,22 @@ impl INSObject for ObjcSubclass {
                     event as *mut Object,
                 );
             }
+            /// NSApplication delegate callback
+            extern "C" fn objc_open_file(
+                this: &Object,
+                _cmd: Sel,
+                _application: u64,
+                file: u64,
+            ) -> bool {
+                let ptr: u64 = unsafe { *this.get_ivar("_rustwrapper") };
+                ObjcSubclass::dispatch_cb(
+                    ptr,
+                    FruitCallbackKey::Method("application:openFile:"),
+                    file as *mut Object,
+                );
+
+                true
+            }
             /// Register the Rust ObjcWrapper instance that wraps this object
             ///
             /// In order for an instance of this ObjC owned object to reach back
@@ -956,6 +972,8 @@ impl INSObject for ObjcSubclass {
                 decl.add_method(sel!(applicationDidFinishLaunching:), f);
                 let f: extern "C" fn(&Object, Sel, u64) = objc_will_finish;
                 decl.add_method(sel!(applicationWillFinishLaunching:), f);
+                let f: extern "C" fn(&Object, Sel, u64, u64) -> bool = objc_open_file;
+                decl.add_method(sel!(application:openFile:), f);
             }
 
             decl.register();
